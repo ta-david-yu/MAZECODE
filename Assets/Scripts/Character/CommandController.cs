@@ -14,6 +14,11 @@ public class CommandController : MonoBehaviour
         Right,
         Down,
 
+        Confirm,
+        Cancel,
+
+        Empty,
+
         NumOfCmd
     }
 
@@ -23,20 +28,12 @@ public class CommandController : MonoBehaviour
     [SerializeField]
     private BinarySignalReader m_Reader;
 
-    public List<List<SignalType>> Seqs { get; set; } = new List<List<SignalType>>();
-
-    public List<SignalType> WalkSeq { get; set; } = new List<SignalType>();
-    public List<SignalType> TurnRightSeq { get; set; } = new List<SignalType>();
-    public List<SignalType> TurnLeftSeq { get; set; } = new List<SignalType>();
-    public List<SignalType> TurnUpSeq { get; set; } = new List<SignalType>();
-    public List<SignalType> TurnDownSeq { get; set; } = new List<SignalType>();
+    public SequenceTree SeqTree { get; private set; } = new SequenceTree();
 
     private void Awake()
     {
-        for (Command cmd = Command.Walk; cmd < Command.NumOfCmd; cmd++)
-        {
-            Seqs.Add(new List<SignalType>());
-        }
+        SeqTree.PushNewCommand(new List<SignalType>() { SignalType.Long }, Command.Cancel);
+        SeqTree.PushNewCommand(new List<SignalType>() { SignalType.Short }, Command.Confirm);
     }
 
     private void Update()
@@ -71,52 +68,38 @@ public class CommandController : MonoBehaviour
 
     private void handleOnEndSeq(List<SignalType> seq)
     {
-        // TODO: to be fixed, a binary tree
-        if (matchSequences(Seqs[(int)Command.Walk], seq))
-        {
-            if (m_InputDriver.State == CommandInputDriver.MovementState.Idle)
-            {
-                m_InputDriver.State = CommandInputDriver.MovementState.Walking;
-            }
-            else
-            {
-                m_InputDriver.State = CommandInputDriver.MovementState.Idle;
-            }
-        }
-        else if (matchSequences(Seqs[(int)Command.Left], seq))
-        {
-            m_InputDriver.Direction = CommandInputDriver.MoveDirection.Left;
-        }
-        else if (matchSequences(Seqs[(int)Command.Up], seq))
-        {
-            m_InputDriver.Direction = CommandInputDriver.MoveDirection.Up;
-        }
-        else if (matchSequences(Seqs[(int)Command.Right], seq))
-        {
-            m_InputDriver.Direction = CommandInputDriver.MoveDirection.Right;
-        }
-        else if (matchSequences(Seqs[(int)Command.Down], seq))
-        {
-            m_InputDriver.Direction = CommandInputDriver.MoveDirection.Down;
-        }
-    }
+        var cmd = SeqTree.GetCommand(seq);
 
-    private bool matchSequences(List<SignalType> a, List<SignalType> b)
-    {
-        if (a.Count == b.Count)
+        switch (cmd)
         {
-            for (int i = 0; i < a.Count; i++)
-            {
-                if (a[i] != b[i])
+            case Command.Walk:
+                if (m_InputDriver.State == CommandInputDriver.MovementState.Idle)
                 {
-                    return false;
+                    m_InputDriver.State = CommandInputDriver.MovementState.Walking;
                 }
-            }
-            return true;
-        }
-        else
-        {
-            return false;
+                else
+                {
+                    m_InputDriver.State = CommandInputDriver.MovementState.Idle;
+                }
+                break;
+            case Command.Left:
+                m_InputDriver.Direction = CommandInputDriver.MoveDirection.Left;
+                break;
+            case Command.Up:
+                m_InputDriver.Direction = CommandInputDriver.MoveDirection.Up;
+                break;
+            case Command.Right:
+                m_InputDriver.Direction = CommandInputDriver.MoveDirection.Right;
+                break;
+            case Command.Down:
+                m_InputDriver.Direction = CommandInputDriver.MoveDirection.Down;
+                break;
+            case Command.Confirm:
+                break;
+            case Command.Cancel:
+                break;
+            case Command.Empty:
+                break;
         }
     }
 }

@@ -271,8 +271,18 @@ public class GameFlow : MonoBehaviour
             if (m_StateMachine.CurrentState >= GameState.DefineWalk &&
                 m_StateMachine.CurrentState <= GameState.DefineDown)
             {
-                m_CacheSequence = sequence;
-                m_StateMachine.IssueCommand(c_ProceedCmd);
+                var cmd = m_CommandController.SeqTree.GetCommand(sequence);
+
+                if (cmd == CommandController.Command.Empty)
+                {
+                    m_CacheSequence = sequence;
+                    m_StateMachine.IssueCommand(c_ProceedCmd);
+                }
+                else
+                {
+                    // re-display hint text
+                    changeHintText(m_HintText.text);
+                }
             }
             else if (m_StateMachine.CurrentState >= GameState.ConfirmWalk &&
                 m_StateMachine.CurrentState <= GameState.ConfirmDown)
@@ -285,7 +295,7 @@ public class GameFlow : MonoBehaviour
 
                         m_StateMachine.IssueCommand(c_ConfirmCmd);
 
-                        m_CommandController.Seqs[index] = m_CacheSequence;
+                        m_CommandController.SeqTree.PushNewCommand(m_CacheSequence, (CommandController.Command)index);
                     }
                     else if (sequence[0] == SignalType.Long)
                     {
