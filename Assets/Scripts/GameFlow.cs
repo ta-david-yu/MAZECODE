@@ -257,6 +257,11 @@ public class GameFlow : MonoBehaviour
     void Update()
     {
         TweenManager.Instance.Update(Time.deltaTime);
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(0);
+        }
     }
 
     private void start()
