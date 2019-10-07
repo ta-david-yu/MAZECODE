@@ -130,16 +130,19 @@ public class BinarySignalReader : MonoBehaviour
 
     public void StopRecording()
     {
-        IsRecording = false;
-
         if (State == BinaryState.High)
         {
             ToLowState();
         }
+
+        IsRecording = false;
     }
 
     public void ToHighState()
     {
+        if (!IsRecording)
+            return;
+
         if (!IsReadingSequence)
         {
             IsReadingSequence = true;
@@ -159,6 +162,9 @@ public class BinarySignalReader : MonoBehaviour
 
     public void ToLowState()
     {
+        if (!IsRecording)
+            return;
+
         var prevSignal = State;
         State = BinaryState.Low;
 

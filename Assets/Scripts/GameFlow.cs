@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using static BinarySignalReader;
 
@@ -42,14 +43,14 @@ public class GameFlow : MonoBehaviour
 
         DefineWalk,
         DefineLeft,
-        DefineUp,
         DefineRight,
+        DefineUp,
         DefineDown,
 
         ConfirmWalk,
         ConfirmLeft,
-        ConfirmUp,
         ConfirmRight,
+        ConfirmUp,
         ConfirmDown,
 
         Free
@@ -77,7 +78,6 @@ public class GameFlow : MonoBehaviour
     private RectTransform m_SequenceUIRoot;
 
     private DUCK.FSM.FiniteStateMachine<GameState> m_StateMachine;
-    private CommandController.Command m_CurrentDefineCommand = CommandController.Command.NumOfCmd;
 
     private List<SignalType> m_TargetSequence = new List<BinarySignalReader.SignalType> { };
 
@@ -112,19 +112,20 @@ public class GameFlow : MonoBehaviour
 
                       .AddTransition(GameState.DefineLeft, GameState.ConfirmLeft, c_ProceedCmd)
                       .AddTransition(GameState.ConfirmLeft, GameState.DefineLeft, c_CancelCmd)
-                      .AddTransition(GameState.ConfirmLeft, GameState.DefineUp, c_ConfirmCmd)
-        
-                      .AddTransition(GameState.DefineUp, GameState.ConfirmUp, c_ProceedCmd)
-                      .AddTransition(GameState.ConfirmUp, GameState.DefineUp, c_CancelCmd)
-                      .AddTransition(GameState.ConfirmUp, GameState.DefineRight, c_ConfirmCmd)
-        
+                      .AddTransition(GameState.ConfirmLeft, GameState.DefineRight, c_ConfirmCmd)
+
                       .AddTransition(GameState.DefineRight, GameState.ConfirmRight, c_ProceedCmd)
                       .AddTransition(GameState.ConfirmRight, GameState.DefineRight, c_CancelCmd)
-                      .AddTransition(GameState.ConfirmRight, GameState.DefineDown, c_ConfirmCmd)
+                      .AddTransition(GameState.ConfirmRight, GameState.Free, c_ConfirmCmd);
+        /*
+                      .AddTransition(GameState.DefineUp, GameState.ConfirmUp, c_ProceedCmd)
+                      .AddTransition(GameState.ConfirmUp, GameState.DefineUp, c_CancelCmd)
+                      .AddTransition(GameState.ConfirmUp, GameState.DefineDown, c_ConfirmCmd)
         
                       .AddTransition(GameState.DefineDown, GameState.ConfirmDown, c_ProceedCmd)
                       .AddTransition(GameState.ConfirmDown, GameState.DefineDown, c_CancelCmd)
                       .AddTransition(GameState.ConfirmDown, GameState.Free, c_ConfirmCmd);
+                      */
 
         m_StateMachine.OnEnter(GameState.Tap, () =>
         {
@@ -189,8 +190,7 @@ public class GameFlow : MonoBehaviour
                                     () =>
                                     {
                                         // show next mission
-                                        m_CmdReader.StartRecording();
-                                        changeHintText("DEFINE [WALK/STOP]");
+                                        changeHintText("DEFINE [WALK/STOP]", () => m_CmdReader.StartRecording());
                                     }
                                 );
                         });
@@ -217,22 +217,22 @@ public class GameFlow : MonoBehaviour
             changeHintText("TAP TO [CONFIRM], HOLD TO [CANCEL]");
         });
 
-        m_StateMachine.OnEnter(GameState.DefineUp, () =>
-        {
-            changeHintText("DEFINE [TURN UP]");
-        });
-
-        m_StateMachine.OnEnter(GameState.ConfirmUp, () =>
-        {
-            changeHintText("TAP TO [CONFIRM], HOLD TO [CANCEL]");
-        });
-
         m_StateMachine.OnEnter(GameState.DefineRight, () =>
         {
             changeHintText("DEFINE [TURN RIGHT]");
         });
 
         m_StateMachine.OnEnter(GameState.ConfirmRight, () =>
+        {
+            changeHintText("TAP TO [CONFIRM], HOLD TO [CANCEL]");
+        });
+
+        m_StateMachine.OnEnter(GameState.DefineUp, () =>
+        {
+            changeHintText("DEFINE [TURN UP]");
+        });
+
+        m_StateMachine.OnEnter(GameState.ConfirmUp, () =>
         {
             changeHintText("TAP TO [CONFIRM], HOLD TO [CANCEL]");
         });
@@ -245,6 +245,11 @@ public class GameFlow : MonoBehaviour
         m_StateMachine.OnEnter(GameState.ConfirmDown, () =>
         {
             changeHintText("TAP TO [CONFIRM], HOLD TO [CANCEL]");
+        });
+
+        m_StateMachine.OnEnter(GameState.Free, () =>
+        {
+            changeHintText("ALL SETUP, READY TO GO");
         });
     }
 
@@ -296,11 +301,19 @@ public class GameFlow : MonoBehaviour
                 {
                     if (sequence[0] == SignalType.Short)
                     {
-                        int index = m_StateMachine.CurrentState - GameState.ConfirmWalk;
+                        CommandController.Command index = (CommandController.Command)(m_StateMachine.CurrentState - GameState.ConfirmWalk);
 
                         m_StateMachine.IssueCommand(c_ConfirmCmd);
 
-                        m_CommandController.SeqTree.PushNewCommand(m_CacheSequence, (CommandController.Command)index);
+                        bool success = m_CommandController.SeqTree.PushNewCommand(m_CacheSequence, index);
+
+                        // debug
+                        StringBuilder builder = new StringBuilder(index.ToString() + ": ");
+                        foreach (var signal in m_CacheSequence)
+                        {
+                            builder.Append((signal == SignalType.Long)? "_ " : ". ");
+                        }
+                        cmdList.Add(builder.ToString());
                     }
                     else if (sequence[0] == SignalType.Long)
                     {
@@ -318,7 +331,7 @@ public class GameFlow : MonoBehaviour
         }
     }
 
-    private void changeHintText(string text)
+    private void changeHintText(string text, Tweener.EndDelegate endcallback = null)
     {
         m_HintText.text = text;
 
@@ -328,7 +341,7 @@ public class GameFlow : MonoBehaviour
             var col = m_HintText.color;
             col.a = progress;
             m_HintText.color = col;
-        }).SetTime(0.45f).SetEase(EasingFunction.Ease.Linear);
+        }).SetTime(0.45f).SetEase(EasingFunction.Ease.Linear).SetEndCallback(endcallback);
     }
 
     private bool matchSequences(List<SignalType> a, List<SignalType> b)
@@ -347,6 +360,34 @@ public class GameFlow : MonoBehaviour
         else
         {
             return false;
+        }
+    }
+
+
+    bool toggleGUI = false;
+    List<string> cmdList = new List<string>();
+    private void OnGUI()
+    {
+        using (var space = new GUILayout.VerticalScope(new GUIStyle("box")))
+        {
+            toggleGUI = GUILayout.Toggle(toggleGUI, "Toggle Debug GUI");
+
+            if (toggleGUI)
+            {
+                {
+                    if (cmdList.Count > 0)
+                    {
+                        foreach (var str in cmdList)
+                        {
+                            GUILayout.Label(str);
+                        }
+                    }
+                    else
+                    {
+                        GUILayout.Label("empty");
+                    }
+                }
+            }
         }
     }
 }

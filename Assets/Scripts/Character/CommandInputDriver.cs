@@ -6,7 +6,7 @@ using UnityEngine;
 [RequireComponent(typeof(AgentController))]
 public class CommandInputDriver : MonoBehaviour
 {
-    private static readonly Vector2[] s_Dirs = new Vector2[] { Vector2.right, Vector2.up, -Vector2.right, -Vector2.up };
+    private static readonly Vector2[] s_Dirs = new Vector2[] { -Vector2.right, -Vector2.up, Vector2.right, Vector2.up, };
 
     public enum MovementState
     {
@@ -16,10 +16,12 @@ public class CommandInputDriver : MonoBehaviour
 
     public enum MoveDirection
     {
-        Right = 0,
+        Left = 0,
+        Down,
+        Right,
         Up,
-        Left,
-        Down
+
+        NumOfDir
     }
 
     [SerializeField]

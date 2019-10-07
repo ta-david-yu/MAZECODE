@@ -10,8 +10,8 @@ public class CommandController : MonoBehaviour
     {
         Walk = 0,
         Left,
-        Up,
         Right,
+        Up,
         Down,
 
         Confirm,
@@ -38,6 +38,7 @@ public class CommandController : MonoBehaviour
 
     private void Update()
     {
+        /*
         if (Input.GetKey(KeyCode.RightArrow))
         {
             m_InputDriver.Direction = CommandInputDriver.MoveDirection.Right;
@@ -54,6 +55,7 @@ public class CommandController : MonoBehaviour
         {
             m_InputDriver.Direction = CommandInputDriver.MoveDirection.Down;
         }
+        */
     }
 
     private void OnEnable()
@@ -83,13 +85,23 @@ public class CommandController : MonoBehaviour
                 }
                 break;
             case Command.Left:
-                m_InputDriver.Direction = CommandInputDriver.MoveDirection.Left;
+                int nextDir = ((int)(m_InputDriver.Direction) + 1);
+                if (nextDir >= (int)CommandInputDriver.MoveDirection.NumOfDir)
+                {
+                    nextDir = (int)CommandInputDriver.MoveDirection.Left;
+                }
+                m_InputDriver.Direction = (CommandInputDriver.MoveDirection)nextDir;
+                break;
+            case Command.Right:
+                nextDir = ((int)(m_InputDriver.Direction) - 1);
+                if (nextDir < 0)
+                {
+                    nextDir = (int)CommandInputDriver.MoveDirection.NumOfDir - 1;
+                }
+                m_InputDriver.Direction = (CommandInputDriver.MoveDirection)nextDir;
                 break;
             case Command.Up:
                 m_InputDriver.Direction = CommandInputDriver.MoveDirection.Up;
-                break;
-            case Command.Right:
-                m_InputDriver.Direction = CommandInputDriver.MoveDirection.Right;
                 break;
             case Command.Down:
                 m_InputDriver.Direction = CommandInputDriver.MoveDirection.Down;
